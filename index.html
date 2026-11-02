@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS Daily Update - Strength & Duty Tracker</title>
+    
+    <!-- PWA & Mobile App Meta Tags -->
+    <meta name="application-name" content="PS Daily Update">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PS Daily Update">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    
+    <!-- Dynamic PWA Manifest Injection -->
+    <script>
+        const manifestData = {
+            "name": "PS Daily Update",
+            "short_name": "PS Daily",
+            "start_url": "./",
+            "display": "standalone",
+            "background_color": "#4f46e5",
+            "theme_color": "#4f46e5",
+            "icons": [
+                {
+                    "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+        const stringManifest = JSON.stringify(manifestData);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Custom Styling for Print Layout */
+        .print-header-area { display: none; }
+
+        @media print {
+            header, 
+            #companySelectorSection, 
+            .no-print, 
+            button, 
+            #dataInputSection, 
+            #resetDataBtn,
+            .password-management-box,
+            .activity-logs-box,
+            footer {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            section {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 10px !important;
+            }
+
+            /* Show Print Specific Elements */
+            .print-header-area { 
+                display: block !important; 
+                margin-bottom: 20px;
+            }
+            
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+            th, td {
+                border: 1px solid #000 !important;
+                padding: 6px 8px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">PS Daily Update</h1>
+            <div id="userRoleBadge" class="text-xs bg-indigo-800 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">User</div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 space-y-6">
+
+        <!-- Special Header for Print Out Only -->
+        <div class="print-header-area text-center">
+            <h1 class="text-xl font-bold uppercase tracking-wider underline mb-4" id="printHeaderTitle">
+                PARADE STATE AS ON <span id="printCurrentDate"></span>
+            </h1>
+
+            <!-- Summary Table for Print Out -->
+            <table class="w-full text-center border-collapse border border-black mb-6 text-sm font-semibold">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border border-black">TOTAL PRESENT STR</th>
+                        <th class="p-2 border border-black">TOTAL OUT STR</th>
+                        <th class="p-2 border border-black">ON PARADE STR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="printTotalPosted" class="p-2 border border-black text-base font-bold">0</td>
+                        <td id="printTotalOut" class="p-2 border border-black text-base font-bold">0</td>
+                        <td id="printTotalBalance" class="p-2 border border-black text-base font-bold">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Company Selector & Print/Share Actions Section -->
+        <section id="companySelectorSection" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="w-full sm:w-2/3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Company / Unit Name (कंपनी चुनें)</label>
+                    <select id="companyNameInput" onchange="handleDropdownChange(this)" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm font-medium">
+                        <option value="ALL COMPANY" class="font-bold text-indigo-700 bg-indigo-50">🌐 ALL COMPANY (ऑल कंपनी - केवल एडमिन)</option>
+                        <option value="अल्फा कंपनी">अल्फा कंपनी</option>
+                        <option value="ब्रेव कंपनी">ब्रेव कंपनी</option>
+                        <option value="चार्ली कंपनी">चार्ली कंपनी</option>
+                        <option value="डेल्टा कंपनी">डेल्टा कंपनी</option>
+                        <option value="एसपी कंपनी">एसपी कंपनी</option>
+                        <option value="हेड क्वार्टर कंपनी">हेड क्वार्टर कंपनी</option>
+                    </select>
+                </div>
+                
+                <!-- Print & Share Buttons Panel -->
+                <div class="w-full sm:w-auto flex items-center gap-2 pt-2 sm:pt-6">
+                    <button onclick="triggerPrintWithDate()" class="flex-1 sm:flex-none bg-gray-800 hover:bg-gray-900 text-white text-xs px-3.5 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                        🖨️ प्रिंट आउट
+                    </button>
+                    <button onclick="shareReportData()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                        📤 शेयर (WhatsApp/Email)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Custom Password Modal -->
+        <div id="passwordModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-white rounded-lg shadow-lg p-5 max-w-sm w-full space-y-4">
+                <h3 id="modalTitle" class="text-base font-bold text-gray-800">पासवर्ड दर्ज करें</h3>
+                <p id="modalSubtext" class="text-xs text-gray-500">आगे बढ़ने के लिए पासवर्ड आवश्यक है।</p>
+                <input type="password" id="modalPasswordInput" placeholder="पासवर्ड दर्ज करें" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" onkeyup="if(event.key === 'Enter') submitPasswordModal()">
+                <div class="flex justify-end gap-2">
+                    <button onclick="closePasswordModal()" class="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">रद्द करें (Cancel)</button>
+                    <button onclick="submitPasswordModal()" class="px-3 py-1.5 text-xs bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">पुष्टि करें (Submit)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Admin Password Change Modal -->
+        <div id="adminPasswordModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-white rounded-xl shadow-lg p-5 max-w-md w-full space-y-4">
+                <h3 class="text-base font-bold text-indigo-900 border-b pb-2">🔑 एडमिन पासवर्ड और सिक्योरिटी सेटिंग्स</h3>
+                
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">वर्तमान एडमिन पासवर्ड दर्ज करें:</label>
+                        <input type="password" id="adminOldPassInput" placeholder="पुराना पासवर्ड" class="w-full p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">सुरक्षा प्रश्न चुनें (Security Question):</label>
+                        <select id="adminSecQuestionSelect" class="w-full p-2 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">सुरक्षा प्रश्न का उत्तर दें (Security Answer):</label>
+                        <input type="text" id="adminSecAnsInput" placeholder="उत्तर दर्ज करें" class="w-full p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label class="block font-medium text-gray-700 mb-1">नया पासवर्ड:</label>
+                            <input type="password" id="adminNewPassInput" placeholder="नया पासवर्ड" class="w-full p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700 mb-1">पासवर्ड पुष्टि:</label>
+                            <input type="password" id="adminConfirmPassInput" placeholder="पुष्टि करें" class="w-full p-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button onclick="closeAdminPasswordModal()" class="px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">रद्द करें</button>
+                    <button onclick="submitAdminPasswordChange()" class="px-4 py-1.5 text-xs bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">अपडेट करें</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Metrics / Totals -->
+        <section class="grid grid-cols-3 gap-4 no-print">
+            <div onclick="openSummaryModal('posted')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center cursor-pointer hover:border-indigo-400 hover:shadow-md transition">
+                <p class="text-xs text-gray-500 font-medium">कुल प्रेजेंट (Present) <span class="text-[10px] text-indigo-500 block">(क्लिक करें)</span></p>
+                <p id="totalPostedDisp" class="text-2xl font-bold text-indigo-600 mt-1">0</p>
+            </div>
+            <div onclick="openSummaryModal('duty')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center cursor-pointer hover:border-amber-400 hover:shadow-md transition">
+                <p class="text-xs text-gray-500 font-medium">कुल ड्यूटी आउट (Duty Out) <span class="text-[10px] text-amber-500 block">(क्लिक करें)</span></p>
+                <p id="totalDutyOutDisp" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+            </div>
+            <div onclick="openSummaryModal('present')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center cursor-pointer hover:border-emerald-400 hover:shadow-md transition">
+                <p class="text-xs text-gray-500 font-medium">बैलेंस / ऑन परेड (On Parade) <span class="text-[10px] text-emerald-500 block">(क्लिक करें)</span></p>
+                <p id="totalBalanceDisp" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+            </div>
+        </section>
+
+        <!-- Dynamic Summary Modal -->
+        <div id="summaryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-white rounded-xl shadow-lg p-5 max-w-lg w-full space-y-4 max-h-[85vh] flex flex-col">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 id="summaryModalTitle" class="text-base font-bold text-gray-800">विवरण</h3>
+                    <button onclick="closeSummaryModal()" class="text-gray-400 hover:text-gray-600 text-lg font-bold">&times;</button>
+                </div>
+                <div id="summaryModalContent" class="overflow-y-auto flex-grow">
+                    <!-- Dynamic Table Content -->
+                </div>
+                <div class="flex justify-end pt-2 border-t">
+                    <button onclick="closeSummaryModal()" class="px-4 py-1.5 text-xs bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">बंद करें (Close)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Input Section -->
+        <section id="dataInputSection" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            <h2 class="text-base font-semibold text-gray-800 border-b pb-2">नफरी और ड्यूटी दर्ज करें</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">प्रेजेंट स्ट्रेंथ (Present Strength)</label>
+                    <input type="number" id="postedInput" oninput="updatePostedStrength()" placeholder="उदा. 39" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ड्यूटी आउट जोड़ें (Add Duty Out)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div class="relative">
+                            <input type="text" id="personNameInput" list="dutySuggestions" autocomplete="off" placeholder="सैनिक कहां ड्यूटी कर रहा है" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                            <datalist id="dutySuggestions">
+                                <!-- Dynamic Datalist Options -->
+                            </datalist>
+                        </div>
+                        <input type="number" id="dutyCountInput" placeholder="कितने सैनिक ड्यूटी कर रहे हैं?" class="p-2 border border-gray-300 rounded-lg text-sm">
+                        <button onclick="addDutyEntry()" class="bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition">ड्यूटी जोड़ें</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Duty Log Table -->
+        <section id="dutyTableSection" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-semibold text-gray-800 text-sm" id="dutyTableTitle">ड्यूटी आउट विवरण लिस्ट</h3>
+                <button id="resetDataBtn" onclick="clearAllData()" class="text-xs text-red-600 hover:underline">रीसेट सभी डेटा</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b text-gray-600">
+                            <th class="p-2.5">विवरण / नाम</th>
+                            <th class="p-2.5">संख्या</th>
+                            <th class="p-2.5">समय</th>
+                            <th class="p-2.5 text-right" id="actionHeader">एक्शन</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dutyTableBody">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Admin Overview Section -->
+        <section id="adminOverviewSection" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-4 hidden">
+            <h2 class="text-base font-semibold text-indigo-700 border-b pb-2 flex items-center justify-between no-print">
+                <span>📊 ऑल कंपनी आउट स्ट्रेंथ डिटेल (All Company Out Strength Detail)</span>
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-normal">केवल एडमिन के लिए</span>
+            </h2>
+
+            <div class="bg-indigo-50/70 border border-indigo-200 rounded-lg p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 password-management-box">
+                <div>
+                    <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-1.5">
+                        🔑 एडमिन पासवर्ड प्रबंधन (Admin Password Management)
+                    </h3>
+                    <p class="text-xs text-indigo-700">यहाँ से एडमिन सिक्योरिटी क्वेश्चन के साथ अपना लॉगिन पासवर्ड बदल सकते हैं।</p>
+                </div>
+                <button onclick="openAdminPasswordModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition shadow-sm whitespace-nowrap">
+                    एडमिन पासवर्ड बदलें
+                </button>
+            </div>
+
+            <div id="adminCompaniesContainer" class="space-y-4">
+                <!-- Admin dynamic cards -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-gray-500 border-t bg-white mt-auto">
+        PS Daily Update &bull; iPhone & Android Compatible
+    </footer>
+
+    <!-- Script -->
+    <script>
+        const DEFAULT_ADMIN_PASSWORD = "2502605p";
+        const DEFAULT_ADMIN_QUESTION = "Where do you born";
+        const DEFAULT_ADMIN_ANSWER = "RAMGARH";
+
+        const SECURITY_QUESTIONS = [
+            "Where do you born",
+            "What was the name of your first school?",
+            "What is your favorite vehicle or car model?",
+            "What is your mother's first name?",
+            "What was your childhood nickname?",
+            "What is your favorite book or movie?",
+            "In what city did your parents meet?"
+        ];
+
+        const DEFAULT_COMPANIES = [
+            "अल्फा कंपनी",
+            "ब्रेव कंपनी",
+            "चार्ली कंपनी",
+            "डेल्टा कंपनी",
+            "एसपी कंपनी",
+            "हेड क्वार्टर कंपनी"
+        ];
+
+        const COMPANY_COLORS = {
+            "अल्फा कंपनी": { bg: "bg-sky-100", border: "border-sky-300", header: "text-sky-900", badgeBg: "bg-sky-200", badgeText: "text-sky-900" },
+            "ब्रेव कंपनी": { bg: "bg-yellow-100", border: "border-yellow-300", header: "text-yellow-900", badgeBg: "bg-yellow-200", badgeText: "text-yellow-900" },
+            "चार्ली कंपनी": { bg: "bg-red-100", border: "border-red-300", header: "text-red-900", badgeBg: "bg-red-200", badgeText: "text-red-900" },
+            "डेल्टा कंपनी": { bg: "bg-orange-100", border: "border-orange-300", header: "text-orange-900", badgeBg: "bg-orange-200", badgeText: "text-orange-900" },
+            "एसपी कंपनी": { bg: "bg-emerald-100", border: "border-emerald-300", header: "text-emerald-900", badgeBg: "bg-emerald-200", badgeText: "text-emerald-900" },
+            "हेड क्वार्टर कंपनी": { bg: "bg-white", border: "border-gray-300", header: "text-gray-900", badgeBg: "bg-gray-100", badgeText: "text-gray-800" }
+        };
+
+        let memoryFallback = {
+            companyName: "डेल्टा कंपनी",
+            role: "user",
+            allCompanies: {},
+            adminPassword: DEFAULT_ADMIN_PASSWORD,
+            adminQuestion: DEFAULT_ADMIN_QUESTION,
+            adminAnswer: DEFAULT_ADMIN_ANSWER
+        };
+
+        DEFAULT_COMPANIES.forEach((comp) => {
+            memoryFallback.allCompanies[comp] = { password: "1234", posted: 0, duties: [], history: [] };
+        });
+
+        let pendingTargetCompany = null;
+
+        function getStorage(key, defaultValue) {
+            try {
+                const val = localStorage.getItem(key);
+                return val !== null ? JSON.parse(val) : defaultValue;
+            } catch (e) {
+                if (key === 'ps_company') return memoryFallback.companyName;
+                if (key === 'ps_role') return memoryFallback.role;
+                if (key === 'ps_all_companies_data') return memoryFallback.allCompanies;
+                if (key === 'ps_admin_password') return memoryFallback.adminPassword;
+                if (key === 'ps_admin_question') return memoryFallback.adminQuestion;
+                if (key === 'ps_admin_answer') return memoryFallback.adminAnswer;
+                return defaultValue;
+            }
+        }
+
+        function setStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        
+        // अगर डेटा ऑल कंपनीज़ का है, तो इसे तुरंत Firebase पर भेजें (Write)
+        if (key === 'ps_all_companies_data' && window.db && window.dbRef) {
+            const allCompaniesRef = window.dbRef(window.db, 'companiesData');
+            window.dbSet(allCompaniesRef, value)
+                .then(() => {
+                    console.log("डेटा सफलताપूर्वक Firebase पर सेव हो गया!");
+                })
+                .catch((error) => {
+                    console.error("Firebase सेव करने में एरर:", error);
+                });
+        }
+    } catch (e) {
+        if (key === 'ps_company') memoryFallback.companyName = value;
+        if (key === 'ps_role') memoryFallback.role = value;
+        if (key === 'ps_all_companies_data') memoryFallback.allCompanies = value;
+        if (key === 'ps_admin_password') memoryFallback.adminPassword = value;
+        if (key === 'ps_admin_question') memoryFallback.adminQuestion = value;
+        if (key === 'ps_admin_answer') memoryFallback.adminAnswer = value;
+    }
+}
+
+        function getAdminPassword() {
+            return getStorage('ps_admin_password', DEFAULT_ADMIN_PASSWORD);
+        }
+
+        function getAdminQuestion() {
+            return getStorage('ps_admin_question', DEFAULT_ADMIN_QUESTION);
+        }
+
+        function getAdminAnswer() {
+            return getStorage('ps_admin_answer', DEFAULT_ADMIN_ANSWER);
+        }
+
+        function triggerPrintWithDate() {
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            document.getElementById('printCurrentDate').innerText = dateStr;
+
+            const postedVal = document.getElementById('totalPostedDisp').innerText;
+            const outVal = document.getElementById('totalDutyOutDisp').innerText;
+            const balanceVal = document.getElementById('totalBalanceDisp').innerText;
+
+            document.getElementById('printTotalPosted').innerText = postedVal;
+            document.getElementById('printTotalOut').innerText = outVal;
+            document.getElementById('printTotalBalance').innerText = balanceVal;
+
+            window.print();
+        }
+
+        function shareReportData() {
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            const role = getStorage('ps_role', 'user');
+            const allData = getAllCompaniesData();
+            
+            let reportText = `📊 *PS DAILY UPDATE - PARADE STATE (${new Date().toLocaleDateString('en-GB')})*\n-----------------------------------\n`;
+
+            if (currentCompany === 'ALL COMPANY' && role === 'admin') {
+                let totalP = 0, totalD = 0;
+                DEFAULT_COMPANIES.forEach(compName => {
+                    const comp = allData[compName] || { posted: 0, duties: [] };
+                    let out = 0;
+                    comp.duties.forEach(d => out += Number(d.count));
+                    let bal = comp.posted - out;
+                    totalP += Number(comp.posted);
+                    totalD += out;
+
+                    reportText += `🔹 *${compName}*\n   • प्रेजेंट: ${comp.posted}\n   • ड्यूटी आउट: ${out}\n   • बैलेंस: ${bal}\n\n`;
+                });
+                let totalBal = totalP - totalD;
+                reportText += `-----------------------------------\n🌐 *कुल योग (All Companies)*\n   • कुल प्रेजेंट: ${totalP}\n   • कुल आउट: ${totalD}\n   • कुल बैलेंस: ${totalBal}`;
+            } else {
+                const comp = allData[currentCompany] || { posted: 0, duties: [] };
+                let out = 0;
+                comp.duties.forEach(d => out += Number(d.count));
+                let bal = comp.posted - out;
+
+                reportText += `🏢 कंपनी: *${currentCompany}*\n   • कुल प्रेजेंट नफरी: ${comp.posted}\n   • कुल ड्यूटी आउट: ${out}\n   • ऑन परेड / बैलेंस: ${bal}\n\n📝 *ड्यूटी विवरण:*`;
+                if (comp.duties.length > 0) {
+                    comp.duties.forEach(d => {
+                        reportText += `\n   - ${d.name}: ${d.count} (${d.time})`;
+                    });
+                } else {
+                    reportText += `\n   - कोई ड्यूटी आउट नहीं`;
+                }
+            }
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'PS Daily Update Report',
+                    text: reportText,
+                }).catch((error) => console.log('Sharing failed', error));
+            } else {
+                const encodedText = encodeURIComponent(reportText);
+                window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+            }
+        }
+
+        function populateSecurityQuestionsDropdown() {
+            const selectEl = document.getElementById('adminSecQuestionSelect');
+            selectEl.innerHTML = '';
+            SECURITY_QUESTIONS.forEach(q => {
+                const opt = document.createElement('option');
+                opt.value = q;
+                opt.innerText = q;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function openAdminPasswordModal() {
+            const role = getStorage('ps_role', 'user');
+            if (role !== 'admin') {
+                alert("यह कार्य केवल एडमिन ही कर सकते हैं!");
+                return;
+            }
+
+            document.getElementById('adminOldPassInput').value = '';
+            document.getElementById('adminSecAnsInput').value = '';
+            document.getElementById('adminNewPassInput').value = '';
+            document.getElementById('adminConfirmPassInput').value = '';
+
+            populateSecurityQuestionsDropdown();
+            document.getElementById('adminPasswordModal').classList.remove('hidden');
+        }
+
+        function closeAdminPasswordModal() {
+            document.getElementById('adminPasswordModal').classList.add('hidden');
+        }
+
+        function submitAdminPasswordChange() {
+            const oldPass = document.getElementById('adminOldPassInput').value.trim();
+            const chosenQuestion = document.getElementById('adminSecQuestionSelect').value;
+            const enteredAnswer = document.getElementById('adminSecAnsInput').value.trim();
+            const newPass = document.getElementById('adminNewPassInput').value.trim();
+            const confirmPass = document.getElementById('adminConfirmPassInput').value.trim();
+
+            const currentAdminPass = getAdminPassword();
+            const storedAnswer = getAdminAnswer();
+
+            if (oldPass !== currentAdminPass) {
+                alert("गलत वर्तमान एडमिन पासवर्ड!");
+                return;
+            }
+
+            if (!enteredAnswer) {
+                alert("कृपया सुरक्षा प्रश्न का उत्तर दर्ज करें।");
+                return;
+            }
+
+            if (enteredAnswer.toUpperCase() !== storedAnswer.toUpperCase()) {
+                alert("सुरक्षा प्रश्न का उत्तर गलत है!");
+                return;
+            }
+
+            if (!newPass) {
+                alert("नया पासवर्ड खाली नहीं हो सकता।");
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                alert("नया पासवर्ड और पुष्टि पासवर्ड मेल नहीं खा रहे हैं!");
+                return;
+            }
+
+            setStorage('ps_admin_password', newPass);
+            setStorage('ps_admin_question', chosenQuestion);
+            setStorage('ps_admin_answer', enteredAnswer);
+
+            alert("सफलतापूर्वक एडमिन पासवर्ड और सिक्योरिटी क्वेश्चन अपडेट कर दिए गए हैं!");
+            closeAdminPasswordModal();
+        }
+
+        function getAllCompaniesData() {
+            let data = getStorage('ps_all_companies_data', null);
+            if (!data) {
+                data = {};
+                DEFAULT_COMPANIES.forEach(comp => {
+                    data[comp] = { password: "1234", posted: 0, duties: [], history: [] };
+                });
+                setStorage('ps_all_companies_data', data);
+            } else {
+                DEFAULT_COMPANIES.forEach(comp => {
+                    if (!data[comp]) {
+                        data[comp] = { password: "1234", posted: 0, duties: [], history: [] };
+                    }
+                    if (!data[comp].history) {
+                        data[comp].history = [];
+                    }
+                });
+            }
+            return data;
+        }
+
+        function handleDropdownChange(selectElement) {
+            const targetCompany = selectElement.value;
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+
+            if (targetCompany === currentCompany) return;
+
+            pendingTargetCompany = targetCompany;
+
+            const modal = document.getElementById('passwordModal');
+            const title = document.getElementById('modalTitle');
+            const subtext = document.getElementById('modalSubtext');
+            const passInput = document.getElementById('modalPasswordInput');
+
+            passInput.value = '';
+
+            if (targetCompany === 'ALL COMPANY') {
+                title.innerText = "एडमिन पासवर्ड दर्ज करें";
+                subtext.innerText = "ऑल कंपनी व्यू खोलने के लिए एडमिन पासवर्ड की आवश्यकता है।";
+            } else {
+                title.innerText = `${targetCompany} पासवर्ड`;
+                subtext.innerText = `कृपया ${targetCompany} का पासवर्ड दर्ज करें:`;
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => passInput.focus(), 100);
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            document.getElementById('companyNameInput').value = currentCompany;
+            pendingTargetCompany = null;
+        }
+
+        function openSummaryModal(type) {
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            const role = getStorage('ps_role', 'user');
+            const modal = document.getElementById('summaryModal');
+            const title = document.getElementById('summaryModalTitle');
+            const content = document.getElementById('summaryModalContent');
+            const allData = getAllCompaniesData();
+
+            let html = '';
+
+            if (currentCompany === 'ALL COMPANY' && role === 'admin') {
+                if (type === 'posted') {
+                    title.innerText = "📊 कंपनी-वाइज़ प्रेजेंट स्ट्रेंथ (Present Strength)";
+                    let total = 0;
+                    let rows = '';
+
+                    DEFAULT_COMPANIES.forEach(compName => {
+                        const comp = allData[compName] || { posted: 0 };
+                        total += Number(comp.posted);
+                        rows += `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2.5 font-medium text-gray-800">${compName}</td>
+                                <td class="p-2.5 text-right font-bold text-indigo-600">${comp.posted}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html = `
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-indigo-50 text-indigo-900 border-b">
+                                    <th class="p-2.5">कंपनी का नाम</th>
+                                    <th class="p-2.5 text-right">प्रेजेंट संख्या</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                                <tr class="bg-indigo-100/60 font-bold border-t-2 border-indigo-200">
+                                    <td class="p-2.5 text-indigo-950">कुल जोड़ (Total)</td>
+                                    <td class="p-2.5 text-right text-indigo-700">${total}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                } else if (type === 'duty') {
+                    title.innerText = "🚨 समस्त कंपनी ड्यूटी आउट विवरण (Duty Out)";
+                    let totalDutyCount = 0;
+                    let blocks = '';
+
+                    DEFAULT_COMPANIES.forEach(compName => {
+                        const comp = allData[compName] || { duties: [] };
+                        let compTotalOut = 0;
+                        let dutyList = '';
+
+                        if (comp.duties.length > 0) {
+                            comp.duties.forEach(d => {
+                                compTotalOut += Number(d.count);
+                                totalDutyCount += Number(d.count);
+                                dutyList += `
+                                    <div class="flex justify-between items-center py-1 border-b border-gray-100 text-xs">
+                                        <span class="text-gray-700">↳ ${d.name} <span class="text-[10px] text-gray-400">(${d.time})</span></span>
+                                        <span class="font-semibold text-amber-700">${d.count}</span>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            dutyList = `<p class="text-xs text-gray-400 italic py-1">कोई ड्यूटी आउट नहीं</p>`;
+                        }
+
+                        const theme = COMPANY_COLORS[compName] || COMPANY_COLORS["हेड क्वार्टर कंपनी"];
+
+                        blocks += `
+                            <div class="border ${theme.border} ${theme.bg} rounded-lg p-3 mb-3 shadow-sm">
+                                <div class="flex justify-between items-center border-b pb-1 mb-1">
+                                    <span class="font-bold text-sm ${theme.header}">${compName}</span>
+                                    <span class="text-xs bg-amber-600 text-white font-bold px-2 py-0.5 rounded">कुल आउट: ${compTotalOut}</span>
+                                </div>
+                                <div class="space-y-0.5">
+                                    ${dutyList}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html = `
+                        <div class="space-y-2">
+                            <div class="p-2 bg-amber-100 text-amber-900 rounded-lg text-xs font-semibold flex justify-between">
+                                <span>समस्त कुल ड्यूटी आउट (All Out Strength):</span>
+                                <span class="text-sm font-bold">${totalDutyCount}</span>
+                            </div>
+                            ${blocks}
+                        </div>
+                    `;
+                } else if (type === 'present') {
+                    title.innerText = "✅ कंपनी-वाइज़ बैलेंस / ऑन परेड (Balance / On Parade)";
+                    let totalPresent = 0;
+                    let rows = '';
+
+                    DEFAULT_COMPANIES.forEach(compName => {
+                        const comp = allData[compName] || { posted: 0, duties: [] };
+                        let totalOut = 0;
+                        comp.duties.forEach(d => totalOut += Number(d.count));
+                        let present = comp.posted - totalOut;
+                        totalPresent += present;
+
+                        rows += `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2.5 font-medium text-gray-800">${compName}</td>
+                                <td class="p-2.5 text-center text-xs text-indigo-600">${comp.posted}</td>
+                                <td class="p-2.5 text-center text-xs text-amber-600">${totalOut}</td>
+                                <td class="p-2.5 text-right font-bold text-emerald-600">${present}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html = `
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-emerald-50 text-emerald-900 border-b text-xs">
+                                    <th class="p-2.5">कंपनी का नाम</th>
+                                    <th class="p-2.5 text-center">प्रेजेंट</th>
+                                    <th class="p-2.5 text-center">आउट</th>
+                                    <th class="p-2.5 text-right">बैलेंस / ऑन परेड</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                                <tr class="bg-emerald-100/60 font-bold border-t-2 border-emerald-200">
+                                    <td class="p-2.5 text-emerald-950" colspan="3">कुल बैलेंस (Total On Parade)</td>
+                                    <td class="p-2.5 text-right text-emerald-700">${totalPresent}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } else {
+                const comp = allData[currentCompany] || { posted: 0, duties: [] };
+                let totalOut = 0;
+                comp.duties.forEach(d => totalOut += Number(d.count));
+                const balance = comp.posted - totalOut;
+
+                if (type === 'posted') {
+                    title.innerText = `📊 ${currentCompany} - कुल प्रेजेंट विवरण`;
+                    html = `
+                        <div class="p-4 bg-indigo-50 rounded-lg text-center">
+                            <p class="text-xs text-indigo-600 font-medium">कुल प्रेजेंट नफरी (Present Strength)</p>
+                            <p class="text-3xl font-bold text-indigo-700 mt-1">${comp.posted}</p>
+                        </div>
+                    `;
+                } else if (type === 'duty') {
+                    title.innerText = `🚨 ${currentCompany} - ड्यूटी आउट ब्रेकडाउन`;
+                    let rows = '';
+
+                    if (comp.duties.length > 0) {
+                        comp.duties.forEach((d, idx) => {
+                            rows += `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-2.5 text-xs text-gray-500">${idx + 1}</td>
+                                    <td class="p-2.5 font-medium text-gray-800">${d.name}</td>
+                                    <td class="p-2.5 text-center text-xs text-gray-500">${d.time}</td>
+                                    <td class="p-2.5 text-right font-bold text-amber-600">${d.count}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        rows = `<tr><td colspan="4" class="p-4 text-center text-gray-400 text-sm">कोई ड्यूटी आउट नहीं है।</td></tr>`;
+                    }
+
+                    html = `
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-amber-50 text-amber-900 border-b text-xs">
+                                    <th class="p-2.5">#</th>
+                                    <th class="p-2.5">ड्यूटी स्थान / नाम</th>
+                                    <th class="p-2.5 text-center">समय</th>
+                                    <th class="p-2.5 text-right">सैनिक संख्या</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                                <tr class="bg-amber-100/70 font-bold border-t-2 border-amber-200">
+                                    <td class="p-2.5 text-amber-950" colspan="3">कुल ड्यूटी आउट (Total Duty Out)</td>
+                                    <td class="p-2.5 text-right text-amber-700">${totalOut}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                } else if (type === 'present') {
+                    title.innerText = `✅ ${currentCompany} - ऑन परेड / बैलेंस स्ट्रेंथ`;
+                    html = `
+                        <div class="space-y-3">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <tbody>
+                                    <tr class="border-b">
+                                        <td class="p-2.5 text-gray-600">कुल प्रेजेंट नफरी</td>
+                                        <td class="p-2.5 text-right font-semibold text-indigo-600">${comp.posted}</td>
+                                    </tr>
+                                    <tr class="border-b">
+                                        <td class="p-2.5 text-gray-600">कुल ड्यूटी आउट</td>
+                                        <td class="p-2.5 text-right font-semibold text-amber-600">-${totalOut}</td>
+                                    </tr>
+                                    <tr class="bg-emerald-50 font-bold">
+                                        <td class="p-2.5 text-emerald-950">बैलेंस / ऑन परेड (On Parade)</td>
+                                        <td class="p-2.5 text-right text-emerald-700">${balance}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            }
+
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').classList.add('hidden');
+        }
+
+        function submitPasswordModal() {
+            const enteredPass = document.getElementById('modalPasswordInput').value.trim();
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            const targetCompany = pendingTargetCompany;
+
+            document.getElementById('passwordModal').classList.add('hidden');
+
+            if (!targetCompany) return;
+
+            if (targetCompany === 'ALL COMPANY') {
+                const adminPass = getAdminPassword();
+                if (enteredPass === adminPass) {
+                    setStorage('ps_role', 'admin');
+                    setStorage('ps_company', 'ALL COMPANY');
+                } else {
+                    alert("गलत एडमिन पासवर्ड!");
+                    document.getElementById('companyNameInput').value = currentCompany;
+                    pendingTargetCompany = null;
+                    return;
+                }
+            } else {
+                const allData = getAllCompaniesData();
+                const compPassword = allData[targetCompany] ? allData[targetCompany].password : "1234";
+
+                if (enteredPass === compPassword) {
+                    setStorage('ps_role', 'user');
+                    setStorage('ps_company', targetCompany);
+                } else {
+                    alert("गलत कंपनी पासवर्ड!");
+                    document.getElementById('companyNameInput').value = currentCompany;
+                    pendingTargetCompany = null;
+                    return;
+                }
+            }
+
+            pendingTargetCompany = null;
+            loadAppData();
+        }
+
+        function renderSuggestions(currentCompany, allData) {
+            const datalist = document.getElementById('dutySuggestions');
+            if (!datalist) return;
+            datalist.innerHTML = '';
+
+            const companyData = allData[currentCompany];
+            if (companyData && companyData.history) {
+                const uniqueHistory = [...new Set(companyData.history)].filter(Boolean);
+                uniqueHistory.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    datalist.appendChild(opt);
+                });
+            }
+        }
+
+        function loadAppData() {
+            const role = getStorage('ps_role', 'user');
+            let currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            const allData = getAllCompaniesData();
+
+            document.getElementById('companyNameInput').value = currentCompany;
+            document.getElementById('userRoleBadge').innerText = role.toUpperCase();
+
+            const adminSection = document.getElementById('adminOverviewSection');
+            const dutyTableSection = document.getElementById('dutyTableSection');
+
+            if (currentCompany === 'ALL COMPANY' && role === 'admin') {
+                adminSection.classList.remove('hidden');
+                dutyTableSection.classList.add('hidden');
+                renderAdminOverview(allData);
+                renderAllCompaniesDashboard(allData);
+            } else {
+                adminSection.classList.add('hidden');
+                dutyTableSection.classList.remove('hidden');
+                document.getElementById('dataInputSection').classList.remove('hidden');
+                document.getElementById('resetDataBtn').classList.remove('hidden');
+                document.getElementById('actionHeader').classList.remove('hidden');
+                if (allData[currentCompany]) {
+                    document.getElementById('postedInput').value = allData[currentCompany].posted;
+                }
+                renderSuggestions(currentCompany, allData);
+                renderDashboard(allData, currentCompany);
+            }
+            
+            checkScheduledNotifications();
+        }
+
+        function updatePostedStrength() {
+            const val = Number(document.getElementById('postedInput').value) || 0;
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            if (currentCompany === 'ALL COMPANY') return;
+
+            let allData = getAllCompaniesData();
+            allData[currentCompany].posted = val;
+            setStorage('ps_all_companies_data', allData);
+            
+            const companyData = allData[currentCompany];
+            let totalDutyOut = 0;
+            companyData.duties.forEach(item => totalDutyOut += Number(item.count));
+            
+            document.getElementById('totalPostedDisp').innerText = val;
+            document.getElementById('totalBalanceDisp').innerText = val - totalDutyOut;
+
+            triggerAdminUpdateAlert(currentCompany, "प्रेजेंट स्ट्रेंथ अपडेट की गई: " + val);
+        }
+
+        function addDutyEntry() {
+            const name = document.getElementById('personNameInput').value.trim();
+            const count = Number(document.getElementById('dutyCountInput').value);
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+
+            if (currentCompany === 'ALL COMPANY') return;
+
+            if (!name || !count || count <= 0) {
+                alert('कृपया सही नाम और संख्या दर्ज करें।');
+                return;
+            }
+
+            let allData = getAllCompaniesData();
+
+            const newEntry = {
+                id: Date.now(),
+                name: name,
+                count: count,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            allData[currentCompany].duties.unshift(newEntry);
+
+            if (!allData[currentCompany].history) {
+                allData[currentCompany].history = [];
+            }
+            if (!allData[currentCompany].history.includes(name)) {
+                allData[currentCompany].history.push(name);
+            }
+
+            setStorage('ps_all_companies_data', allData);
+
+            document.getElementById('personNameInput').value = '';
+            document.getElementById('dutyCountInput').value = '';
+
+            loadAppData();
+
+            triggerAdminUpdateAlert(currentCompany, `ड्यूटी जोड़ी गई: ${name} (${count} सैनिक)`);
+        }
+
+        // --- Edit Duty Function ---
+        function editDuty(id, compName) {
+            const currentCompany = compName || getStorage('ps_company', 'डेल्टा कंपनी');
+            let allData = getAllCompaniesData();
+
+            if (allData[currentCompany]) {
+                const dutyItem = allData[currentCompany].duties.find(item => item.id === id);
+                if (dutyItem) {
+                    // इनपुट फील्ड्स में पुराना डेटा भरें
+                    document.getElementById('personNameInput').value = dutyItem.name;
+                    document.getElementById('dutyCountInput').value = dutyItem.count;
+
+                    // पुरानी एंट्री को लिस्ट से हटा दें ताकि दोबारा सबमिट करने पर अपडेटेड एंट्री जुड़ सके
+                    allData[currentCompany].duties = allData[currentCompany].duties.filter(item => item.id !== id);
+                    setStorage('ps_all_companies_data', allData);
+                    loadAppData();
+                    
+                    // यूजर का ध्यान इनपुट बॉक्स पर केंद्रित करने के लिए
+                    document.getElementById('personNameInput').focus();
+                    triggerAdminUpdateAlert(currentCompany, "ड्यूटी एडिट के लिए निकाली गई");
+                }
+            }
+        }
+
+        function deleteDuty(id, compName) {
+            const currentCompany = compName || getStorage('ps_company', 'डेल्टा कंपनी');
+            let allData = getAllCompaniesData();
+
+            if (allData[currentCompany]) {
+                allData[currentCompany].duties = allData[currentCompany].duties.filter(item => item.id !== id);
+                setStorage('ps_all_companies_data', allData);
+                loadAppData();
+                triggerAdminUpdateAlert(currentCompany, "ड्यूटी एंट्री हटाई गई");
+            }
+        }
+
+        function clearAllData() {
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            if (currentCompany === 'ALL COMPANY') return;
+
+            if (confirm(`क्या आप ${currentCompany} का सारा डेटा रीसेट करना चाहते हैं?`)) {
+                let allData = getAllCompaniesData();
+                allData[currentCompany].posted = 0;
+                allData[currentCompany].duties = [];
+                setStorage('ps_all_companies_data', allData);
+                loadAppData();
+                triggerAdminUpdateAlert(currentCompany, "डेटा रीसेट किया गया");
+            }
+        }
+
+        function updateCompanyPassword(compName) {
+            const newPass = prompt(`"${compName}" के लिए नया पासवर्ड दर्ज करें:`);
+            if (newPass && newPass.trim() !== "") {
+                let allData = getAllCompaniesData();
+                allData[compName].password = newPass.trim();
+                setStorage('ps_all_companies_data', allData);
+                alert(`सफलतापूर्वक ${compName} का पासवर्ड बदल दिया गया है!`);
+                loadAppData();
+            } else {
+                alert("पासवर्ड खाली नहीं हो सकता।");
+            }
+        }
+
+        function triggerAdminUpdateAlert(companyName, actionDetails) {
+            let logs = getStorage('ps_admin_logs', []);
+            const logEntry = {
+                company: companyName,
+                details: actionDetails,
+                time: new Date().toLocaleString()
+            };
+            logs.unshift(logEntry);
+            if(logs.length > 20) logs.pop();
+            setStorage('ps_admin_logs', logs);
+        }
+
+        function checkScheduledNotifications() {
+            const currentCompany = getStorage('ps_company', 'डेल्टा कंपनी');
+            const role = getStorage('ps_role', 'user');
+
+            if (role === 'admin' || currentCompany === 'ALL COMPANY') return;
+
+            const now = new Date();
+            const day = now.getDay();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+
+            const allowedDays = [0, 1, 3, 5];
+            const isTargetTime = (hour === 15 || hour === 18) && minute === 0;
+
+            if (allowedDays.includes(day) && isTargetTime) {
+                const lastNotifiedKey = `ps_notified_${day}_${hour}`;
+                const alreadyNotified = sessionStorage.getItem(lastNotifiedKey);
+
+                if (!alreadyNotified) {
+                    sessionStorage.setItem(lastNotifiedKey, 'true');
+                    alert("📢 Please update PT strength\nअपनी पीटी स्ट्रेंथ अपडेट करें");
+                }
+            }
+        }
+
+        setInterval(checkScheduledNotifications, 30000);
+
+        function renderDashboard(allData, currentCompany) {
+            const companyData = allData[currentCompany] || { posted: 0, duties: [] };
+            const posted = Number(companyData.posted);
+            const duties = companyData.duties;
+
+            let totalDutyOut = 0;
+            let tbody = '';
+
+            duties.forEach(item => {
+                totalDutyOut += Number(item.count);
+                tbody += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2.5 font-medium">${item.name}</td>
+                        <td class="p-2.5 text-amber-600 font-semibold">${item.count}</td>
+                        <td class="p-2.5 text-gray-500 text-xs">${item.time}</td>
+                        <td class="p-2.5 text-right no-print space-x-2">
+                            <button onclick="editDuty(${item.id})" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold">एडिट</button>
+                            <button onclick="deleteDuty(${item.id})" class="text-red-500 hover:text-red-700 text-xs">हटाएं</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (duties.length === 0) {
+                tbody = `<tr><td colspan="4" class="p-4 text-center text-gray-400 text-sm">कोई ड्यूटी एंट्री नहीं है।</td></tr>`;
+            }
+
+            const balance = posted - totalDutyOut;
+
+            document.getElementById('dutyTableTitle').innerText = `ड्यूटी आउट विवरण लिस्ट (${currentCompany})`;
+            document.getElementById('totalPostedDisp').innerText = posted;
+            document.getElementById('totalDutyOutDisp').innerText = totalDutyOut;
+            document.getElementById('totalBalanceDisp').innerText = balance;
+            document.getElementById('dutyTableBody').innerHTML = tbody;
+        }
+
+        function renderAllCompaniesDashboard(allData) {
+            let totalPosted = 0;
+            let totalDutyOut = 0;
+
+            DEFAULT_COMPANIES.forEach(compName => {
+                const comp = allData[compName] || { posted: 0, duties: [] };
+                totalPosted += Number(comp.posted);
+                
+                comp.duties.forEach(d => {
+                    totalDutyOut += Number(d.count);
+                });
+            });
+
+            const totalBalance = totalPosted - totalDutyOut;
+
+            document.getElementById('dataInputSection').classList.add('hidden');
+
+            document.getElementById('totalPostedDisp').innerText = totalPosted;
+            document.getElementById('totalDutyOutDisp').innerText = totalDutyOut;
+            document.getElementById('totalBalanceDisp').innerText = totalBalance;
+        }
+
+        function renderAdminOverview(allData) {
+            let container = document.getElementById('adminCompaniesContainer');
+            let logs = getStorage('ps_admin_logs', []);
+            
+            let logHtml = `<div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200 mb-4 text-xs activity-logs-box">
+                <p class="font-bold text-indigo-900 mb-1">🔔 लाइव गतिविधि और अपडेट लॉग (Recent Activity Logs):</p>
+                <div class="max-h-24 overflow-y-auto space-y-1">`;
+            
+            if(logs.length > 0) {
+                logs.forEach(l => {
+                    logHtml += `<p class="text-gray-700"><strong>[${l.company}]</strong> ${l.details} <span class="text-gray-400 text-[10px]">(${l.time})</span></p>`;
+                });
+            } else {
+                logHtml += `<p class="text-gray-400 italic">अभी कोई गतिविधि दर्ज नहीं हुई है। यूजर द्वारा स्ट्रेंथ अपडेट करते ही यहाँ दिखेगा।</p>`;
+            }
+            logHtml += `</div></div>`;
+
+            let html = logHtml;
+
+            DEFAULT_COMPANIES.forEach(compName => {
+                const comp = allData[compName] || { password: "1234", posted: 0, duties: [] };
+                const theme = COMPANY_COLORS[compName] || COMPANY_COLORS["हेड क्वार्टर कंपनी"];
+
+                let totalOut = 0;
+                comp.duties.forEach(d => totalOut += Number(d.count));
+                let present = comp.posted - totalOut;
+
+                let tableRows = '';
+                tableRows += `
+                    <tr class="border-b border-gray-300/50">
+                        <td class="p-2 font-medium text-indigo-900">प्रेजेंट स्ट्रेंथ (Present)</td>
+                        <td class="p-2 text-right font-bold text-indigo-700">${comp.posted}</td>
+                    </tr>
+                `;
+
+                if (comp.duties.length > 0) {
+                    comp.duties.forEach(d => {
+                        tableRows += `
+                            <tr class="border-b border-gray-300/40 text-gray-700">
+                                <td class="p-2 pl-4 text-xs">↳ ${d.name} <span class="text-[10px] text-gray-400">(${d.time})</span></td>
+                                <td class="p-2 text-right font-semibold text-amber-700">${d.count}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tableRows += `
+                        <tr class="border-b border-gray-300/40 text-gray-400 italic">
+                            <td class="p-2 pl-4 text-xs" colspan="2">कोई ड्यूटी आउट नहीं</td>
+                        </tr>
+                    `;
+                }
+
+                tableRows += `
+                    <tr class="border-b border-gray-300/50 bg-amber-50/50">
+                        <td class="p-2 font-semibold text-amber-900">कुल आउट (Total Out)</td>
+                        <td class="p-2 text-right font-bold text-amber-700">${totalOut}</td>
+                    </tr>
+                `;
+
+                tableRows += `
+                    <tr class="bg-emerald-50/60 font-bold">
+                        <td class="p-2 text-emerald-900">बैलेंस / ऑन परेड (Balance / On Parade)</td>
+                        <td class="p-2 text-right text-emerald-700">${present}</td>
+                    </tr>
+                `;
+
+                html += `
+                    <div class="border ${theme.border} ${theme.bg} rounded-lg p-3.5 shadow-sm transition space-y-3">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2 border-b border-gray-300/60 gap-2">
+                            <h3 class="font-bold ${theme.header} text-base">${compName}</h3>
+                            <div class="flex items-center gap-2 no-print">
+                                <span class="text-xs ${theme.badgeBg} ${theme.badgeText} px-2 py-1 rounded font-medium border border-black/10">पासवर्ड: <strong>${comp.password}</strong></span>
+                                <button onclick="updateCompanyPassword('${compName}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1 rounded transition shadow-sm">पासवर्ड बदलें</button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto bg-white/70 rounded-lg border border-gray-200">
+                            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        window.onload = loadAppData;
+    </script>
+<script type="module">
+  // सही और स्टेबल v9 CDN लिंक (यहाँ 'app' हटा दिया गया है)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4I2hdGfgT5Qog_N--9EepsfYV2VeF6dw",
+    authDomain: "myps-79e8f.firebaseapp.com",
+    projectId: "myps-79e8f",
+    storageBucket: "myps-79e8f.firebasestorage.app",
+    messagingSenderId: "486809300407",
+    appId: "1:486809300407:web:c85214f7f64a894a8d4c32",
+    databaseURL:"https://myps-79e8f-default-rtdb.asia-southeast1.firebasedatabase.app
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app,"https://myps-79e8f-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+  window.db = db;
+  window.dbRef = ref;
+  window.dbSet = set;
+  window.dbOnValue = onValue;
+  window.dbUpdate = update;
+
+  const dbRefPath = ref(db, 'companiesData');
+  onValue(dbRefPath, (snapshot) => {
+      const firebaseData = snapshot.val();
+      if (firebaseData) {
+          const localData = localStorage.getItem('ps_all_companies_data');
+          if (!localData) {
+              localStorage.setItem('ps_all_companies_data', JSON.stringify(firebaseData));
+              if (typeof loadAppData === 'function') {
+                  loadAppData();
+              }
+          }
+      }
+  });
+</script>
+</body>
+</html>
